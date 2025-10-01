@@ -4,6 +4,144 @@ All notable changes to the SQL Database BACPAC Migration Script will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2024-12-19
+
+### Added
+- **Database Logging Feature**:
+  - New `LoggingDatabase` parameter for SQL database connection string
+  - Automatic creation of MigrationTimings table if it doesn't exist
+  - Records comprehensive timing data:
+    - Source/destination server and database names
+    - Start/end times for overall migration, export, and import phases
+    - Duration calculations for each phase
+    - BACPAC file size
+    - Compression type used
+    - Machine name and username
+    - Error messages on failure
+  - All times stored as DATETIMEOFFSET in UTC for timezone-aware reporting
+  - Computed columns for duration calculations
+  - Indexed for performance on common queries
+  - Status tracking: Started → Exporting → Exported → Importing → Imported → Completed/Failed
+
+### Database Schema
+- Table: MigrationTimings
+- Includes calculated duration columns for easy reporting
+- Supports historical analysis and performance trending
+- Can be used for capacity planning and optimization
+
+### Notes
+- Requires Invoke-SqlCmd cmdlet (part of SqlServer module)
+- Gracefully continues if database logging fails
+- Useful for enterprise environments tracking multiple migrations
+
+## [1.7.6] - 2024-12-19
+
+### Added
+- New `CompressionType` parameter to control BACPAC compression level
+  - Options: Fast (default), Optimal, Maximum, NoCompression
+  - SqlPackage `/p:CompressionOption` parameter support
+  - Compression type display in export logging
+  - Example showing compression usage for large databases
+
+### Improved
+- Better control over export speed vs. file size trade-off
+- Faster exports for time-sensitive operations using "Fast"
+- Smaller BACPAC files for bandwidth-limited scenarios using "Maximum"
+
+### Notes
+- "Fast" is the default as it provides the best performance for most scenarios
+- "Maximum" compression can reduce BACPAC size by 20-40% but may double export time
+- Compression type affects export only; import automatically detects compression
+
+## [1.7.5] - 2024-12-19
+
+### Fixed
+- **FINAL FIX**: Removed `/p:TempDirectoryForTableData` parameter from Import action
+- This parameter is definitively NOT supported for Import operations in SqlPackage
+- Corrected parameter description to clearly state it only applies to export
+
+### Changed
+- Updated documentation to reflect that TempDirectory is export-only
+- Removed verbose logging for temp directory from import process
+
+### Note
+- The confusion arose from outdated documentation; current SqlPackage versions only support this parameter for Export
+- Import operations use system temp and cannot be redirected via this parameter
+
+## [1.7.4] - 2024-12-19
+
+### Added
+- Automatic detection and selection of highest SqlPackage.exe version on the machine
+- Support for additional SqlPackage locations:
+  - SQL Server 2016, 2017, 2019, 2022 installations
+  - Visual Studio 2019 and 2022 (all editions)
+  - Azure Data Studio
+  - .NET Tool installation
+- Version information display showing which SqlPackage version is being used
+- Verbose mode shows all found SqlPackage installations and their versions
+
+### Improved
+- More comprehensive search for SqlPackage.exe across common installation paths
+- Better version comparison using System.Version objects
+- Ensures the most recent/capable version of SqlPackage is always used
+- Helpful feedback showing count of installations found and version selected
+
+### Changed
+- SqlPackage selection now based on version rather than first-found
+- More detailed logging during SqlPackage discovery process
+
+## [1.7.3] - 2024-12-19
+
+### Fixed
+- Re-added `/p:TempDirectoryForTableData` parameter to Import action
+- The parameter is actually valid for both Export AND Import operations in SqlPackage
+
+### Changed
+- Updated parameter description to clarify TempDirectory applies to both export and import
+- Added verbose logging for temp directory in import process
+
+### Note
+- Version 1.7.1 incorrectly removed this parameter from Import based on an error that was likely caused by other factors
+- SqlPackage uses temporary storage during import to extract and process the BACPAC contents
+
+## [1.7.2] - 2024-12-19
+
+### Added
+- New `EnableDiagnostics` switch parameter to enable verbose SqlPackage output
+- SqlPackage diagnostic parameters `/DiagnosticsLevel:Verbose` and `/Diagnostics:True` when enabled
+- Example showing how to use diagnostics for troubleshooting
+- Warning message when diagnostics are enabled
+
+### Improved
+- Better troubleshooting capabilities for export/import issues
+- Detailed SqlPackage output including:
+  - Progress messages for each table
+  - SQL statements being executed
+  - Timing information for operations
+  - Detailed error information on failures
+
+## [1.7.1] - 2024-12-19
+
+### Fixed
+- Removed `/p:TempDirectoryForTableData` parameter from Import action as it's only valid for Export
+- Corrected parameter description to clarify TempDirectory only applies to export operations
+
+### Changed
+- Updated documentation to reflect that TempDirectory parameter is export-only
+
+## [1.7.0] - 2024-12-19
+
+### Added
+- New `TempDirectory` parameter to specify custom temporary directory for SqlPackage operations
+- SqlPackage `/p:TempDirectoryForTableData` parameter support for both export and import operations
+- Automatic creation of temp directory if it doesn't exist
+- Verbose logging shows temp directory when specified
+- Example showing TempDirectory usage for large database migrations
+
+### Improved
+- Better handling of large database exports/imports by allowing temp space on different drives
+- Helpful for scenarios where system temp drive has insufficient space
+
 ## [1.6.2] - 2024-12-19
 
 ### Removed
